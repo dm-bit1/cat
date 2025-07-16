@@ -140,7 +140,15 @@ public class DatabaseManager {
 
     // Controller functions - add your routes here. getItems is provided as an example
     public static JSONArray getItems() {
-        String sql = "SELECT * FROM items";
+        // changed to include the fields specified
+        String sql = "SELECT " +
+             "ITEMS.NAME, " +
+             "ITEMS.ID, " +
+             "INVENTORY.STOCK, " +
+             "INVENTORY.CAPACITY " +
+             "FROM ITEMS " +
+             "JOIN INVENTORY ON ITEMS.ID = INVENTORY.ITEM;";
+
         try {
             ResultSet set = conn.createStatement().executeQuery(sql);
             return convertResultSetToJson(set);
@@ -149,4 +157,131 @@ public class DatabaseManager {
             return null;
         }
     }
+    // Returns a JSON array of items where stock is 0.
+    public static JSONArray getOutOfStockItems() {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
+                "FROM items JOIN inventory ON items.id = inventory.item " +
+                "WHERE inventory.stock = 0"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    // Returns a JSON array with overstocked items.
+    public static JSONArray getOverstockedItems() {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
+                "FROM items JOIN inventory ON items.id = inventory.item " +
+                "WHERE inventory.stock > inventory.capacity"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    // Returns a JSON array with items in the inventory that are currently low on stock (< 35%).
+    public static JSONArray getLowStockItems() {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
+                "FROM items JOIN inventory ON items.id = inventory.item " +
+                "WHERE inventory.stock < 0.35 * inventory.capacity"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+    // Dynamic route that returns a JSON Array with the item details for a given ID.
+    public static JSONArray getItemById(String id) {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
+                "FROM items JOIN inventory ON items.id = inventory.item " +
+                "WHERE items.id = '" + id + "'"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+    // returns all distributors, including the id and name
+    public static JSONArray getAllDistributors() {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT id, name FROM distributors"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    // Given a distributors ID, returns the items distributed by a given distributor, including the item name, ID, and cost
+    public static JSONArray getItemsByDistributorId(String distributorId) {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT items.name, items.id, distributor_prices.cost " +
+                "FROM items JOIN distributor_prices ON items.id = distributor_prices.item " +
+                "WHERE distributor_prices.distributor = '" + distributorId + "'"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+    // Given an item ID, returns all offerings from all distributors for that item, including the distributor name, ID, and cost
+    public static JSONArray getItemOfferingsById(String itemId) {
+        try {
+            ResultSet set = conn.createStatement().executeQuery(
+                "SELECT distributors.name, distributors.id, distributor_prices.cost " +
+                "FROM distributors JOIN distributor_prices ON distributors.id = distributor_prices.distributor " +
+                "WHERE distributor_prices.item = '" + itemId + "'"
+            );
+            return convertResultSetToJson(set);
+        }
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    // Add a new item to the database.
+    public static JSONArray addItem(int id, String name) {
+        String sql = "INSERT INTO items (id, name) VALUES (?, ?)";
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            pstmt.setString(2, name);
+            pstmt.executeUpdate();
+            return getItemById(String.valueOf(id));
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
 }
+
+
+
+
+
+
