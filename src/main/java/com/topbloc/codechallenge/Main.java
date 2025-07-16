@@ -65,52 +65,55 @@ public class Main {
                 return result.toString();
         });
 
-        // An item by ID, including the item name, ID, amount in stock, total capacity, and distributor information
+        // This route gets an  item by ID, including the item name, ID, amount in stock, total capacity, and distributor information
         get("/item/:id", (req, res) -> {
-                JSONArray result = DatabaseManager.getItemById(req.params(":id"));
-                if (result == null) {
-                        res.status(400);
-                        return new JSONObject().put("error", "Item not found or database error").toString();
-                }
+                int itemId = Integer.parseInt(req.params(":id")); // throws NumberFormatException for invalid IDs
+                JSONArray result = DatabaseManager.getItemById(itemId);
                 res.type("application/json");
+                if (result == null) {
+                        throw new RuntimeException("Item not found or database error");
+                }
                 return result.toString();
         });
 
-        // All distributors, including the distributor name, ID, and contact information
+
+
+
+        // All distributors, including the distributor name, ID, contact information, and all items they distribute
         get("/distributors", (req, res) -> {
                 JSONArray result = DatabaseManager.getAllDistributors();
-                if (result == null) {
-                        res.status(400);
-                        return new JSONObject().put("error", "Database error").toString();
-                }
                 res.type("application/json");
-                return result.toString();
+                return (result == null) ? null : result.toString();
         });
 
-        // A distributor by ID, including the distributor name, ID, contact information, and all items they distribute
+        // A dynamic route that, given a distributors ID, returns the items distributed by a given distributor, including the item name, ID, and cost
         get("/distributor/:id", (req, res) -> {
-                JSONArray result = DatabaseManager.getItemsByDistributorId(req.params(":id"));
-                if (result == null) {
-                        res.status(400);
-                        return new JSONObject().put("error", "Database error").toString();
-                }
+                int distributorId = Integer.parseInt(req.params(":id"));
+                JSONArray result = DatabaseManager.getItemsByDistributorId(distributorId);
                 res.type("application/json");
-                return result.toString();
+                return (result == null) ? null : result.toString();
         });
 
-        // All item offerings, including the item name, ID, amount in stock, total capacity, and distributor information
+        //A dynamic route that, given an item ID, returns all offerings from all distributors for that item, including the distributor name, ID, and cost
         get("/itemOfferings/:id", (req, res) -> {
-                JSONArray result = DatabaseManager.getItemOfferingsById(req.params(":id"));
-                if (result == null) {
-                        res.status(400);
-                        return new JSONObject().put("error", "Database error").toString();
-                }
-                res.type("application/json");
-                return result.toString();
+		int itemId = Integer.parseInt(req.params(":id"));
+		JSONArray result = DatabaseManager.getItemOfferingsById(itemId);
+		res.type("application/json");
+		return (result == null) ? null : result.toString();
         });
 
-        // POST/PUT/DELETE routes
-        
+        // POST/PUT/DELETE routes are below.
+        // Add a new item to the database. It works directly in the url with item/id/name without JSON parsing.
+      	put("/item/:id/:name/:other_id", (req, res) -> {
+                int id = Integer.parseInt(req.params(":id"));
+		String name = req.params(":name");
+		int other_id = Integer.parseInt(req.params(":other_id"));
+		boolean success = DatabaseManager.insertItem(id, name, other_id);
 
-    }
-}
+		res.type("application/json");
+		return "{\"inserted\":" + success + "}";
+        	});
+        } //main
+    // next route
+
+} // class

@@ -139,8 +139,8 @@ public class DatabaseManager {
     }
 
     // Controller functions - add your routes here. getItems is provided as an example
+    // getItems was changed to include the fields specified in README.
     public static JSONArray getItems() {
-        // changed to include the fields specified
         String sql = "SELECT " +
              "ITEMS.NAME, " +
              "ITEMS.ID, " +
@@ -205,20 +205,21 @@ public class DatabaseManager {
         }
     }
     // Dynamic route that returns a JSON Array with the item details for a given ID.
-    public static JSONArray getItemById(String id) {
+    public static JSONArray getItemById(int id) {
+        String query = "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
+                    "FROM items JOIN inventory ON items.id = inventory.item " +
+                    "WHERE items.id = ?";
         try {
-            ResultSet set = conn.createStatement().executeQuery(
-                "SELECT items.name, items.id, inventory.stock, inventory.capacity " +
-                "FROM items JOIN inventory ON items.id = inventory.item " +
-                "WHERE items.id = '" + id + "'"
-            );
+            PreparedStatement stmt = conn.prepareStatement(query);
+            stmt.setInt(1, id);
+            ResultSet set = stmt.executeQuery();
             return convertResultSetToJson(set);
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             System.out.println(e.getMessage());
             return null;
         }
     }
+
     // returns all distributors, including the id and name
     public static JSONArray getAllDistributors() {
         try {
@@ -234,50 +235,69 @@ public class DatabaseManager {
     }
 
     // Given a distributors ID, returns the items distributed by a given distributor, including the item name, ID, and cost
-    public static JSONArray getItemsByDistributorId(String distributorId) {
-        try {
-            ResultSet set = conn.createStatement().executeQuery(
-                "SELECT items.name, items.id, distributor_prices.cost " +
-                "FROM items JOIN distributor_prices ON items.id = distributor_prices.item " +
-                "WHERE distributor_prices.distributor = '" + distributorId + "'"
-            );
+    public static JSONArray getItemsByDistributorId(int distributorId) {
+        String sql = "SELECT items.name, items.id, distributor_prices.cost " +
+                    "FROM items JOIN distributor_prices ON items.id = distributor_prices.item " +
+                    "WHERE distributor_prices.distributor = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, distributorId);
+            ResultSet set = stmt.executeQuery();
             return convertResultSetToJson(set);
-        }
-        catch (SQLException e) {
-            System.out.println(e.getMessage());
-            return null;
-        }
-    }
-    // Given an item ID, returns all offerings from all distributors for that item, including the distributor name, ID, and cost
-    public static JSONArray getItemOfferingsById(String itemId) {
-        try {
-            ResultSet set = conn.createStatement().executeQuery(
-                "SELECT distributors.name, distributors.id, distributor_prices.cost " +
-                "FROM distributors JOIN distributor_prices ON distributors.id = distributor_prices.distributor " +
-                "WHERE distributor_prices.item = '" + itemId + "'"
-            );
-            return convertResultSetToJson(set);
-        }
-        catch (SQLException e) {
-            System.out.println(e.getMessage());
-            return null;
-        }
-    }
-
-    // Add a new item to the database.
-    public static JSONArray addItem(int id, String name) {
-        String sql = "INSERT INTO items (id, name) VALUES (?, ?)";
-        try {
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, id);
-            pstmt.setString(2, name);
-            pstmt.executeUpdate();
-            return getItemById(String.valueOf(id));
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             return null;
         }
     }
+
+    // Given an item ID, returns all offerings from all distributors for that item, including the distributor name, ID, and cost
+    public static JSONArray getItemOfferingsById(int itemId) {
+            String sql = "SELECT distributors.name, distributors.id, distributor_prices.cost " +
+                        "FROM distributors JOIN distributor_prices ON distributors.id = distributor_prices.distributor " +
+                        "WHERE distributor_prices.item = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, itemId);
+                    ResultSet set = stmt.executeQuery();
+                    return convertResultSetToJson(set);
+            } catch (SQLException e) {
+                    System.out.println(e.getMessage());
+                    return null;
+            }
+    }
+
+
+    // Helper function to add a new item to the database. The mapping is id:items.id, other_id:inventory.id.
+    // The default stock and capacity are set to 0.
+    public static boolean insertItem(int id, String name, int other_id) {
+        String item_sql = "INSERT INTO items (id, name) VALUES (?, ?)";
+        String inventory_sql = "INSERT INTO inventory (id, item, stock, capacity) VALUES (?, ?, 0, 0)";
+
+        try (
+            PreparedStatement stmt = conn.prepareStatement(item_sql);
+            PreparedStatement other_stmt = conn.prepareStatement(inventory_sql)
+        ) {
+            stmt.setInt(1, id);
+            stmt.setString(2, name);
+            stmt.executeUpdate();
+
+            other_stmt.setInt(1, other_id);  // inventory.id
+            other_stmt.setInt(2, id);        // inventory.item (FK to items.id)
+            other_stmt.executeUpdate();
+
+            //conn.commit(); 
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace(); // prints in the Main app what happened in sql
+
+            System.out.println("Insert failed");
+
+            return false;
+        }
+    }
+    // Helper to add a new item to your inventory
+    public static boolean insertInventory() {
+        return false;
+    }
+    // next
 }
 
 
