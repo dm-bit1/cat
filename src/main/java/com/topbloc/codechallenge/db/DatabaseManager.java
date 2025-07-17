@@ -24,6 +24,12 @@ public class DatabaseManager {
         try {
             Connection connection = DriverManager.getConnection(connectionString);
             System.out.println("Connection to SQLite has been established.");
+
+            // I added this statement to enforce foreign keys in the database.
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
+
             conn = connection;
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -294,10 +300,132 @@ public class DatabaseManager {
         }
     }
     // Helper to add a new item to your inventory
-    public static boolean insertInventory() {
-        return false;
+    public static boolean insertInventory(int id, int item, int stock, int capacity) {
+        String sql = "INSERT INTO inventory (id, item, stock, capacity) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.setInt(2, item);
+            stmt.setInt(3, stock);
+            stmt.setInt(4, capacity);
+            stmt.executeUpdate();
+            return true;
+        }
+        catch (SQLException e) {
+            e.printStackTrace(); // optional: log or handle the error
+            return false;
+        }
     }
-    // next
+
+    // Helper to modify an item in the inventory. It allows updates for: item, stock, capacity.
+    public static boolean updateInventory(int id, int item, int stock, int capacity) {
+        String sql = "UPDATE inventory SET item = ?, stock = ?, capacity = ? WHERE id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, item);
+            stmt.setInt(2, stock);
+            stmt.setInt(3, capacity);
+            stmt.setInt(4, id);
+            stmt.executeUpdate();
+            return true;
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Helper to add a distributor.
+    public static boolean insertDistributor(int id, String name) {
+        String sql = "INSERT INTO distributors (id, name) VALUES (?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.setString(2, name);
+            stmt.executeUpdate();
+            return true;
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Helper to add items to a distributor's catalog (including the cost).
+    public static boolean insertDistributorPrices(int id, int distributor, int item, double cost) {
+        String sql = "INSERT INTO distributor_prices (id, distributor, item, cost) VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.setInt(2, distributor);
+            stmt.setInt(3, item);
+            stmt.setDouble(4, cost);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    // Helper to modify the price only of an item in a distributor's catalog.
+    public static boolean updateDistributorPrices(int id, double cost) {
+        String sql = "UPDATE distributor_prices SET cost = ? WHERE id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setDouble(1, cost);
+            stmt.setInt(2, id);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Helper to get the cheapest price for restocking an item at a given quantity from all distributors
+    public static JSONArray getCheapestPrice(int item, int quantity) {
+        String sql = "SELECT MIN(cost * ?) AS cheapest_price FROM distributor_prices WHERE item = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quantity);
+            stmt.setInt(2, item);
+
+            ResultSet rs = stmt.executeQuery();
+            return convertResultSetToJson(rs);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+    }
+
+    // Helper to delete an item from the inventory.
+    public static boolean deleteInventory(int id) {
+        String sql = "DELETE FROM inventory WHERE id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            int countRows = stmt.executeUpdate(); // how many rows were changed
+            return countRows > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // helper to delete a distributor given an id. This table has a key constraint.
+    public static boolean deleteDistributor(int id) {
+        String sql = "DELETE FROM distributors WHERE id = ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } 
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
 
 

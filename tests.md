@@ -1,31 +1,59 @@
-This file shows a few methods I used to test code in the project.
+This file shows the ad-hoc methods I used to test code in the project.
 
-I used Curl as in the example below to do some ad-hoc tests after each route was completed.
+I used Curl as in the examples below to do some ad-hoc tests after each route was completed.
+
+And, I ran ad-hoc SQL queries using the terminal to check out the database.
+
+For example, 'sqlite3 challenge.db' followed by '.schema' shows the schema. 
+
+This helped me with selecting primary key values for CRUD operations and so on.
+
+It is entirely possible to write unit tests that validate any function and how it returns data.
+
+All of my Put and Post routes use an exception handler that returns true or false dependent upon success and the 
+
+stack trace prints in Main which is useful to show the SQL error.
  
-The -i flag also shows the http code of 200 for success or 400 for database errors after each Curl query. 
+The -i flag in Curl shows the http codes for success or failure.
+
+Use %27 to encode ' and %20 for space inside the URL.
+
+Some ad-hoc tests I used are below:
 
 curl -i http://localhost:4567/items
 
-curl -i http://localhost:4567/item/100 returned empty. No message is given.
+curl -i http://localhost:4567/item/100 returned empty. 
 
 curl -i http://localhost:4567/itemOfferings/1
 
-Test case: curl -i http://localhost:4567/itemOfferings/xxx
+curl -X put http://localhost:4567/inventory/80/91/10/20 returned {"updated":true}
 
-For the put route:
+curl -X post http://localhost:4567/distributors/4/Good%20Candy returned {"inserted":true}
 
-curl -X put http://localhost:4567/item/id/name/other_id 
+curl -X post http://localhost:4567/distributors/5/Charleston%20Chew returned {"inserted":true}
 
-To add a space in the name, use %20. The UTRL to database mappings are id:items.id, name:items.name,other_id:inventory.id.
+curl -X post http://localhost:4567/distributors/5/Good%20Bar correctly returned {"inserted":false} 
 
-Returns back:
-HTTP/1.1 500 Server Error
-Date: Wed, 16 Jul 2025 19:44:26 GMT
-Content-Type: text/html;charset=utf-8
-Transfer-Encoding: chunked
-Server: Jetty(9.3.6.v20151106)
+Because id 5 already exists in distributors. Main terminal shows A PRIMARY KEY constraint failed (UNIQUE constraint 
 
+failed: distributors.id).
 
-I also ran ad-hoc SQL queries in a terminal to check the database out.
+curl -X post http://localhost:4567/distributor_prices/28/1/1/0.81 returned {"inserted":true}
 
-For example, 'sqlite3 challenge.db' followed by '.schema' shows the schema.
+Tn enforce foreign keys in sqlite use: pragma foreign_keys = ON;
+
+curl -X post http://localhost:4567/distributor_prices/29/100/1/0.81 correctly returned false because of a foreign
+
+key constraint exception. The value 100 does not exist in distributors.id.
+
+curl -X post http://localhost:4567/distributor_prices/29/1/22/0.81 correctly return false because of a primary key 
+
+constraint with item.id of 22.
+
+curl -i http://localhost:4567/cheapest_price/1/25 returned [{"cheapest_price":20.25}]
+ 
+curl -i http://localhost:4567/cheapest_price/2/50 returned [{"cheapest_price":9.0}]
+
+curl -X DELETE http://localhost:4567/inventory/80 returned {"deleted":true}
+
+curl -X DELETE http://localhost:4567/distributors/5 returned {"deleted":true}
