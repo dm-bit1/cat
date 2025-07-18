@@ -96,18 +96,20 @@ public class Main {
             return (result == null) ? null : result.toString();
         });
 
-        // Add a new item with items.id, items.name, inventory.id.
-        post("/item/:id/:name/:other_id", (req, res) -> {
+        // Add a new item to the database. Fixing.
+        post("/item/:id/:name", (req, res) -> {
             int id = Integer.parseInt(req.params(":id"));
+    
             String name = req.params(":name");
-            int other_id = Integer.parseInt(req.params(":other_id"));
-            boolean success = DatabaseManager.insertItem(id, name, other_id);
+
+            boolean success = DatabaseManager.insertItem(id, name);
 
             res.type("application/json");
+
             return "{\"inserted\":" + success + "}";
         });
 
-        // Add a new item to your inventory. Bookmark. Change 4 spaces to 1 tab.
+        // Add a new item to your inventory. This should be ok.
         post("/inventory/:id/:item/:stock/:capacity", (req, res) -> {
             int id = Integer.parseInt(req.params(":id"));
             int item = Integer.parseInt(req.params(":item"));

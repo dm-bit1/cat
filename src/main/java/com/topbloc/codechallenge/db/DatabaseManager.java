@@ -271,23 +271,15 @@ public class DatabaseManager {
     }
 
 
-    // Helper function to add a new item to the database. The mapping is id:items.id, other_id:inventory.id.
-    // The default stock and capacity are set to 0.
-    public static boolean insertItem(int id, String name, int other_id) {
-        String item_sql = "INSERT INTO items (id, name) VALUES (?, ?)";
-        String inventory_sql = "INSERT INTO inventory (id, item, stock, capacity) VALUES (?, ?, 0, 0)";
+    // Helper function to add a new item to the database.
+    public static boolean insertItem(int id, String name) {
+        String sql = "INSERT INTO items (id, name) VALUES (?, ?)";
 
-        try (
-            PreparedStatement stmt = conn.prepareStatement(item_sql);
-            PreparedStatement other_stmt = conn.prepareStatement(inventory_sql)
-        ) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql))
+        {
             stmt.setInt(1, id);
             stmt.setString(2, name);
             stmt.executeUpdate();
-
-            other_stmt.setInt(1, other_id);  // inventory.id
-            other_stmt.setInt(2, id);        // inventory.item (FK to items.id)
-            other_stmt.executeUpdate();
 
             //conn.commit(); 
             return true;
