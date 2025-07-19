@@ -284,9 +284,9 @@ public class DatabaseManager {
             //conn.commit(); 
             return true;
         } catch (SQLException e) {
-            e.printStackTrace(); // prints in the Main app what happened in sql
+            // e.printStackTrace(); // stack trace prints the error
 
-            System.out.println("Insert failed");
+            System.out.println(e.getMessage());
 
             return false;
         }
@@ -303,7 +303,10 @@ public class DatabaseManager {
             return true;
         }
         catch (SQLException e) {
-            e.printStackTrace(); // optional: log or handle the error
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -321,7 +324,10 @@ public class DatabaseManager {
             return true;
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -337,7 +343,10 @@ public class DatabaseManager {
             return true;
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -354,7 +363,10 @@ public class DatabaseManager {
             stmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -368,7 +380,10 @@ public class DatabaseManager {
             stmt.executeUpdate();
             return true;
         } catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -398,7 +413,10 @@ public class DatabaseManager {
             int countRows = stmt.executeUpdate(); // how many rows were changed
             return countRows > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
@@ -413,7 +431,10 @@ public class DatabaseManager {
             return rowsAffected > 0;
         } 
         catch (SQLException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
+
+            System.out.println(e.getMessage());
+
             return false;
         }
     }
