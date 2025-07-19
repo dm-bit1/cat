@@ -1,8 +1,8 @@
 ## Testing Overview
 
-This file shows the ad-hoc methods I used to test code in the project.
+This file shows the ad-hoc methods I used to test code in the project and some notes on SQL injection security.
 
-I used Curl as in the examples below to do some ad-hoc tests after each route was completed.
+I used Postman and Curl as in the examples below to do some ad-hoc tests after each route was completed.
 
 And, I ran ad-hoc SQL queries using the terminal to check out the database.
 
@@ -24,19 +24,27 @@ Useful shell commands in SQLite:
 
 ---
 
-## Notes on Routes and Error Handling
+## Notes on SQL Injection Security, Routes and Error Handling
 
-It is entirely possible to write unit tests that validate any function and how it returns data.
+On SQL injection concerns: every statement in the code uses only placeholders (?) in queries. There is no parameter concatention in a query.
 
-All of my Put and Post routes use an exception handler that returns true or false dependent upon success and the stack trace prints in Main which is useful to show the SQL error.
+I could also run some tests of common SQL injection type queries in calls to the API to verify security.
 
-- The -i flag in Curl shows the http codes for success or failure.
+To take security one step further, an object tier class could be used to create objects (ORM) from the endpoint URLs.
 
--In the URL use %27 to encode ' and %20 for a space.
+This could ensure that no data from an endpoint interacts with the database directly.
+
+An approach I can use for unit tests is to make a class with variables for URL response code, JSON data returned for a get, etc.
+
+All of my Put and Post routes use an exception handler that returns true or false dependent upon success.
+
+I use a statement to print the exception error in console which is useful to show SQL errors.
+
+In Curl a -i flag shows the http codes for success or failure.
 
 ---
 
-## Sample ad-hoc tests I did using Curl and SQL queries for a database snapshot.
+## Sample ad-hoc tests I did using Curl. And I ran SQL queries for a database snapshot after requests of Post or Put.
 
 curl -i http://localhost:4567/items
 
@@ -44,50 +52,40 @@ curl -i http://localhost:4567/item/100
 
 curl -i http://localhost:4567/itemOfferings/1
 
-curl -X put http://localhost:4567/inventory/80/91/10/20
-
-curl -X post http://localhost:4567/distributors/4/Good%20Candy
-
-curl -X post http://localhost:4567/distributors/5/Charleston%20Chew
-
-curl -X post http://localhost:4567/distributors/5/Good%20Bar
-# This returned {"inserted":false} because id 5 already exists in distributors.
-# Main terminal shows A PRIMARY KEY constraint failed (UNIQUE constraint failed: distributors.id).
-
-curl -X post http://localhost:4567/distributor_prices/28/1/1/0.81
-
-curl -X post http://localhost:4567/distributor_prices/29/100/1/0.81
-# Returned false due to a foreign key constraint. Value 100 does not exist in distributors.id.
-
-curl -X post http://localhost:4567/distributor_prices/29/1/22/0.81
-# Returned false due to primary key constraint with item.id of 22.
-
 curl -i http://localhost:4567/cheapest_price/1/25
+
 curl -i http://localhost:4567/cheapest_price/2/50
 
 curl -X DELETE http://localhost:4567/inventory/80
+
 curl -X DELETE http://localhost:4567/distributors/5
 
-curl -X post http://localhost:4567/item/18/Sweet%20Apple
-curl -X post http://localhost:4567/item/18/Sweet%20Cherry
-# Correctly returned {"inserted": false}. Main showed SQL error due to a duplicate key.
-
-curl -X post http://localhost:4567/item/500/Marzepan
-# 'select * from items;' showed {"id":500,"name":"Marzepan"}
-
-curl -i -X post http://localhost:4567/item/x/Marzepan
-# Response:
-# HTTP/1.1 500 Server Error
-# Content-Type: text/html;charset=utf-8
-
-curl -i -X post http://localhost:4567/item/539/Ginger%20Chocolate
+curl -X POST http://localhost:4567/item \
+-H "Content-Type: application/json" \
+-d '{"id":711, "name":"Candy Worms"}'
 # Response: {"inserted":true}
-# Item existed in DB
+# item existed in database
 
-curl -i -X post http://localhost:4567/item/808/11%20Vanilla
+curl -X POST http://localhost:4567/inventory -H "Content-Type: application/json" -d '{"id":21, "item": 2, "stock":5, "capacity": 1000}'
 # Response: {"inserted":true}
-# Item existed in DB
+# item existed after a query
 
-curl -i -X post http://localhost:4567/item/400/$$%20Dollar%20Candy
+curl -X PUT http://localhost:4567/inventory \
+  -H "Content-Type: application/json" \
+  -d '{"id": 21, "item": 2, "stock": 100, "capacity": 150}'
+# Response :{"updated":true}
+# item existed a query
+
+curl -X POST http://localhost:4567/distributors \
+  -H "Content-Type: application/json" \
+  -d '{"id": 5, "name": "Haribo Inc."}'
 # Response: {"inserted":true}
-# {"id":400,"name":"145907 Dollar Candy"} in DB. This $ converted in some ASCII way.
+
+ curl -X POST http://localhost:4567/distributor_prices \                                    -H "Content-Type: application/json" \
+  -d '{"id": 29, "distributor": 1, "item": 99, "cost": 2}'
+# response {"inserted":false}
+# correctly returned because id 29 exists already.
+
+curl -X POST http://localhost:4567/distributor_prices   -H "Content-Type: application/json"   -d '{"id": 30, "distributor": 1, "item": 99, "cost": 2}'
+# response {"inserted":true}
+

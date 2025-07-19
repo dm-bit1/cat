@@ -6,6 +6,9 @@ import static spark.Spark.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 public class Main {
     public static void main(String[] args) {
         DatabaseManager.connect();
@@ -96,38 +99,50 @@ public class Main {
             return (result == null) ? null : result.toString();
         });
 
-        // Add a new item to the database. Fixing.
-        post("/item/:id/:name", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-    
-            String name = req.params(":name");
+        // Add a new item to the database.
+        post("/item", (req, res) -> {
+            JSONParser parser = new JSONParser();
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+            String name = body.get("name").toString();
 
             boolean success = DatabaseManager.insertItem(id, name);
 
             res.type("application/json");
-
             return "{\"inserted\":" + success + "}";
         });
 
-        // Add a new item to your inventory. This should be ok.
-        post("/inventory/:id/:item/:stock/:capacity", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            int item = Integer.parseInt(req.params(":item"));
-            int stock = Integer.parseInt(req.params(":stock"));
-            int capacity = Integer.parseInt(req.params(":capacity"));
+        // Add a new item to your inventory. 
+        post("/inventory", (req, res) -> {
+            JSONParser parser = new JSONParser();
+
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+
+            int item = Integer.parseInt(body.get("item").toString());
+
+            int stock = Integer.parseInt(body.get("stock").toString());
+
+            int capacity = Integer.parseInt(body.get("capacity").toString());
 
             boolean success = DatabaseManager.insertInventory(id, item, stock, capacity);
 
             res.type("application/json");
+    
             return "{\"inserted\":" + success + "}";
         });
 
         // Modify an existing item in your inventory
-        put("/inventory/:id/:item/:stock/:capacity", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            int item = Integer.parseInt(req.params(":item"));
-            int stock = Integer.parseInt(req.params(":stock"));
-            int capacity = Integer.parseInt(req.params(":capacity"));
+        put("/inventory", (req, res) -> {
+            JSONParser parser = new JSONParser();
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+            int item = Integer.parseInt(body.get("item").toString());
+            int stock = Integer.parseInt(body.get("stock").toString());
+            int capacity = Integer.parseInt(body.get("capacity").toString());
 
             boolean success = DatabaseManager.updateInventory(id, item, stock, capacity);
 
@@ -136,9 +151,12 @@ public class Main {
         });
 
         // Add a distributor
-        post("/distributors/:id/:name", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            String name = req.params(":name");
+        post("/distributors", (req, res) -> {
+            JSONParser parser = new JSONParser();
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+            String name = body.get("name").toString();
 
             boolean success = DatabaseManager.insertDistributor(id, name);
 
@@ -148,11 +166,14 @@ public class Main {
 
 
         // Add items to a distributor's catalog (including the cost)
-        post("/distributor_prices/:id/:distributor/:item/:cost", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            int distributor = Integer.parseInt(req.params(":distributor"));
-            int item = Integer.parseInt(req.params(":item"));
-            double cost = Double.parseDouble(req.params(":cost"));
+        post("/distributor_prices", (req, res) -> {
+            JSONParser parser = new JSONParser();
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+            int distributor = Integer.parseInt(body.get("distributor").toString());
+            int item = Integer.parseInt(body.get("item").toString());
+            double cost = Double.parseDouble(body.get("cost").toString());
 
             boolean success = DatabaseManager.insertDistributorPrices(id, distributor, item, cost);
 
@@ -160,17 +181,20 @@ public class Main {
             return "{\"inserted\":" + success + "}";
         });
 
+
         // Modify the price of an item in a distributor's catalog
-        put("/distributor_prices/:id/:cost", (req, res) -> {
-            int id = Integer.parseInt(req.params(":id"));
-            double cost = Double.parseDouble(req.params(":cost"));
+        put("/distributor_prices", (req, res) -> {
+            JSONParser parser = new JSONParser();
+            JSONObject body = (JSONObject) parser.parse(req.body());
+
+            int id = Integer.parseInt(body.get("id").toString());
+            double cost = Double.parseDouble(body.get("cost").toString());
 
             boolean success = DatabaseManager.updateDistributorPrices(id, cost);
 
             res.type("application/json");
             return "{\"updated\":" + success + "}";
         });
-
 
         // Get the cheapest price for restocking an item at a given quantity from all distributors
         get("/cheapest_price/:item/:quantity", (req, res) -> {
